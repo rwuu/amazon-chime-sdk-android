@@ -63,9 +63,11 @@ class DefaultAudioClientController(
         )
 
         // Result is in bytes, so we divide by 2 (16-bit samples)
+        val channelConfig = if (AudioClient.OUTPUT_CHANNEL_COUNT == 1) AudioFormat.CHANNEL_OUT_MONO
+            else AudioFormat.CHANNEL_OUT_STEREO
         val spkMinBufSizeInSamples = AudioTrack.getMinBufferSize(
             nativeSR,
-            AudioFormat.CHANNEL_OUT_MONO,
+            channelConfig,
             AudioFormat.ENCODING_PCM_16BIT
         ) / 2
 
@@ -147,6 +149,9 @@ class DefaultAudioClientController(
 
         val appInfo = AppInfoUtil.initializeAudioClientAppInfo(context)
 
+        val codec = if (AudioClient.AUDIO_CLIENT_SAMPLE_RATE == 48000) AudioClient.kCodecOpus48KHz
+            else AudioClient.kCodecOpusLow
+
         uiScope.launch {
             val res = audioClient.startSessionV2(
                 AudioClient.XTL_DEFAULT_TRANSPORT,
@@ -155,14 +160,17 @@ class DefaultAudioClientController(
                 joinToken,
                 meetingId,
                 attendeeId,
-                AudioClient.kCodecOpusLow,
-                AudioClient.kCodecOpusLow,
+                codec,
+                codec,
                 DEFAULT_MIC_AND_SPEAKER,
                 DEFAULT_MIC_AND_SPEAKER,
                 DEFAULT_PRESENTER,
                 audioFallbackUrl,
                 null,
-                appInfo
+                appInfo,
+                AudioClient.AUDIO_CLIENT_SAMPLE_RATE,
+                AudioClient.INPUT_CHANNEL_COUNT,
+                AudioClient.OUTPUT_CHANNEL_COUNT
             )
 
             if (res != AUDIO_CLIENT_RESULT_SUCCESS) {
